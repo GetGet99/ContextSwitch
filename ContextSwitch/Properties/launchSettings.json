@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ContextSwitch (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "ContextSwitch (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
