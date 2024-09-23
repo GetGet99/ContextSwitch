@@ -23,7 +23,7 @@ class FloatingTimer : Window
     readonly WindowApi w;
     DateTime endtime;
     readonly TextBlock tb;
-    readonly DispatcherQueueTimer timer;
+    readonly DispatcherQueueTimer timer, ringtimer;
     readonly SolidColorBrush background = new(Color.FromArgb(255 / 2, 0x20, 0x20, 0x20));
     public FloatingTimer()
     {
@@ -53,13 +53,17 @@ class FloatingTimer : Window
         };
 
         timer = DispatcherQueue.CreateTimer();
+        ringtimer = DispatcherQueue.CreateTimer();
         timer.Interval = TimeSpan.FromMilliseconds(500);
+        ringtimer.Interval = TimeSpan.FromMilliseconds(1000);
         timer.Tick += (_, _) => TimerCallback();
+        ringtimer.Tick += (_, _) => ToggleRingState();
         w = WindowApi.FromWindowHandle((nint)AppWindow.Id.Value);
         w.SetTopMost();
         w.IsTtileBarVisible = false;
         w[WindowStyles.THICKFRAME] = false;
         w[WindowStyles.Border] = false;
+        w[WindowExStyles.TOOLWINDOW] = true;
         // Do not hit-test this window
         w[WindowExStyles.Layered] = true;
         w[WindowExStyles.Transparent] = true;
@@ -121,6 +125,10 @@ class FloatingTimer : Window
     public bool IsTimerRunning => endtime > DateTime.Now;
     public void Start(TimeSpan timerDuration)
     {
+        ringtimer.Stop();
+        if (ringTimerAbnormalState)
+            ToggleRingState();
+        keyReset = false;
         var content = (StackPanel)Content;
         if (content.Children.Count == 3)
         {
@@ -131,10 +139,15 @@ class FloatingTimer : Window
         background.Color = Color.FromArgb(255 / 2, 0x20, 0x20, 0x20);
         endtime = DateTime.Now + timerDuration;
         TimerCallback();
-        timer.Start();
+        if (IsTimerRunning)
+            timer.Start();
         lockHide = false;
         Content.Opacity = 1;
         ToHide = DateTime.Now + TimeSpan.FromSeconds(5);
+    }
+    public void Stop()
+    {
+        endtime = DateTime.Now;
     }
     bool lockHide = false;
     void TimerCallback()
@@ -159,13 +172,13 @@ class FloatingTimer : Window
             }
         } else
         {
-            tb.Text = "00:00";
-            background.Color = Colors.Red;
-            ElementSoundPlayer.State = ElementSoundPlayerState.On;
-            ElementSoundPlayer.Play(ElementSoundKind.Invoke);
-            ElementSoundPlayer.State = ElementSoundPlayerState.Off;
-            Content.Opacity = 1;
             timer.Stop();
+            tb.Text = "00:00";
+            ElementSoundPlayer.State = ElementSoundPlayerState.On;
+            ToggleRingState();
+            ringtimer.Start();
+            lockHide = true;
+            Content.Opacity = 1;
             keyReset = true;
             ((StackPanel)Content).Children.Add(new TextBlock {
                 FontSize = 11,
@@ -175,5 +188,19 @@ class FloatingTimer : Window
             });
             UpdateSize();
         }
+    }
+    bool ringTimerAbnormalState;
+    void ToggleRingState()
+    {
+        if (ringTimerAbnormalState)
+        {
+            background.Color = Color.FromArgb(255 / 2, 0x20, 0x20, 0x20);
+            ElementSoundPlayer.State = ElementSoundPlayerState.Off;
+        } else
+        {
+            background.Color = Colors.Red;
+            ElementSoundPlayer.Play(ElementSoundKind.Invoke);
+        }
+        ringTimerAbnormalState = !ringTimerAbnormalState;
     }
 }
