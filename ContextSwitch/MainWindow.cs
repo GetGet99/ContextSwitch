@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Globalization;
 using WinUIEx;
 using WindowApi = WinWrapper.Windowing.Window;
+using static ContextSwitch.Controls;
 namespace ContextSwitch;
 
 class MainWindow : Window
@@ -44,24 +45,24 @@ class MainWindow : Window
             Children =
             {
                 (titlebar = new()),
-                (main = new StackPanel
+                (main = VStack(
+                    center: true,
+                    ContextSwitchLogo(new(0, 0, 0, 50)),
+                    Text("How long should we do work before switching tasks?"),
+                    tp = new TimePicker {
+                        MinuteIncrement = 5,
+                        ClockIdentifier = ClockIdentifiers.TwentyFourHour,
+                        SelectedTime = TimeSpan.FromMinutes(25),
+                    },
+                    btn = new Button() { Content = "Start Timer" },
+                    HStack(center: true, Text("Tip: Hold"), Key("R-CTRL"), Text("to show timer"))
+                )
+                .WithCustomCode(x =>
                 {
-                    VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    Spacing = 16,
-                    Children = {
-                        ContextSwitchLogo(new(0, 0, 0, 50)),
-                        new TextBlock { Text = "How long should we do work before switching tasks?", HorizontalAlignment = HorizontalAlignment.Center },
-                        (tp = new TimePicker {
-                            MinuteIncrement = 5,
-                            ClockIdentifier = ClockIdentifiers.TwentyFourHour,
-                            SelectedTime = TimeSpan.FromMinutes(25),
-                            HorizontalAlignment = HorizontalAlignment.Center,
-                        }),
-                        (btn = new Button() { Content = "Start Timer" , HorizontalAlignment = HorizontalAlignment.Center }),
-                        new TextBlock { Text = "Tip: Hold R-CTRL to show timer", HorizontalAlignment = HorizontalAlignment.Center }
-                    }
-                })
+                    x.VerticalAlignment = VerticalAlignment.Center;
+                    x.HorizontalAlignment = HorizontalAlignment.Center;
+                    x.Spacing = 16;
+                }))
             }
         };
         Grid.SetRow(main, 1);

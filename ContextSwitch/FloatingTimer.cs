@@ -14,7 +14,7 @@ using WindowApi = WinWrapper.Windowing.Window;
 using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
 using Microsoft.UI.Composition;
-
+using static ContextSwitch.Controls;
 
 namespace ContextSwitch;
 
@@ -180,12 +180,8 @@ class FloatingTimer : Window
             lockHide = true;
             Content.Opacity = 1;
             keyReset = true;
-            ((StackPanel)Content).Children.Add(new TextBlock {
-                FontSize = 11,
-                Text = "Press R-CTRL to reset",
-                TextLineBounds = TextLineBounds.Tight,
-                VerticalAlignment = VerticalAlignment.Center
-            });
+            ((StackPanel)Content).Children.Add(
+                HStack(center: true, Key("R-CTRL", new(0, 0, right: 5, 0)), Text("Reset Timer", TextLineBounds.Tight)));
             UpdateSize();
         }
     }
@@ -198,7 +194,9 @@ class FloatingTimer : Window
             ElementSoundPlayer.State = ElementSoundPlayerState.Off;
         } else
         {
-            background.Color = Colors.Red;
+            Color c = Colors.Red;
+            c.A = 255 / 2;
+            background.Color = c;
             ElementSoundPlayer.Play(ElementSoundKind.Invoke);
         }
         ringTimerAbnormalState = !ringTimerAbnormalState;

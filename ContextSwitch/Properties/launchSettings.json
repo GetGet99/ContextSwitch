@@ -4,7 +4,10 @@
       "commandName": "MsixPackage"
     },
     "ContextSwitch (Unpackaged)": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "environmentVariables": {
+        "UNPKG": "true"
+      }
     }
   }
 }
