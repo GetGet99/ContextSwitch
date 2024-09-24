@@ -15,6 +15,7 @@ using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
 using Microsoft.UI.Composition;
 using static ContextSwitch.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 
 namespace ContextSwitch;
 
@@ -93,22 +94,82 @@ class FloatingTimer : Window
         animation.Target = nameof(contentVisual.Opacity);
         contentVisual.ImplicitAnimations[nameof(contentVisual.Opacity)] = animation;
     }
-
+    bool isCtrlDown = false;
+#if UNPKG
+    public const string HOTKEY_MAIN = "R-ALT";
+#else
+    public const string HOTKEY_MAIN = "R-CTRL";
+#endif
     private void LowLevelKeyboard_KeyPressed(KeyboardHookInfo eventDetails, KeyboardState state, ref bool Handled)
     {
+        bool isDown = state is KeyboardState.KeyDown or KeyboardState.SystemKeyDown;
+#if UNPKG
+        // Use RSHIFT for debugging
+        if (eventDetails.KeyCode == WinWrapper.Input.VirtualKey.RMENU)
+#else
         if (eventDetails.KeyCode == WinWrapper.Input.VirtualKey.RCONTROL)
+#endif
         {
-            bool isDown = state is KeyboardState.KeyDown or KeyboardState.SystemKeyDown;
-            if (keyReset)
+            Handled = true;
+            isCtrlDown = isDown;
+            if (!keyReset)
             {
-                if (isDown) Start(resetTimerDuration);
-            }
-            else
-            {
-                if (isDown)
+                if (isCtrlDown)
+                {
                     Content.Opacity = 1;
+                    ToHide = null;
+                }
                 else
                     ToHide = DateTime.Now + TimeSpan.FromSeconds(3);
+            }
+        }
+        if (isCtrlDown && eventDetails.KeyCode == WinWrapper.Input.VirtualKey.UP)
+        {
+            Handled = true;
+            if (isDown)
+            {
+                if (IsTimerRunning)
+                {
+                    endtime += TimeSpan.FromMinutes(1);
+                    TimerCallback();
+                }
+                else
+                    Start(TimeSpan.FromMinutes(1));
+            }
+        }
+        if (isCtrlDown && eventDetails.KeyCode == WinWrapper.Input.VirtualKey.DOWN)
+        {
+            Handled = true;
+            if (isDown && IsTimerRunning)
+            {
+                endtime -= TimeSpan.FromMinutes(1);
+                TimerCallback();
+            }
+        }
+        if (isCtrlDown && eventDetails.KeyCode == WinWrapper.Input.VirtualKey.RETURN)
+        {
+            Handled = true;
+            if (isDown && keyReset)
+            {
+                Start(resetTimerDuration);
+            }
+        }
+        if (isCtrlDown && eventDetails.KeyCode == WinWrapper.Input.VirtualKey.LEFT)
+        {
+            Handled = true;
+            if (isDown)
+            {
+                Flyout flyout = null!;
+                flyout = new Flyout
+                {
+                    SystemBackdrop = new MicaBackdrop(),
+                    Content = VStack(center: true,
+                        Text("Quick Actions Page Coming Soon!"),
+                        new Button { Content = "Cool!" }.WithCustomCode(x => x.Click += (_, _) => flyout.Hide())
+                    ),
+                    ShouldConstrainToRootBounds = false
+                };
+                flyout.ShowAt(Content, new() { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft});
             }
         }
     }
@@ -181,7 +242,7 @@ class FloatingTimer : Window
             Content.Opacity = 1;
             keyReset = true;
             ((StackPanel)Content).Children.Add(
-                HStack(center: true, Key("R-CTRL", new(0, 0, right: 5, 0)), Text("Reset Timer", TextLineBounds.Tight)));
+                HStack(center: true, Key($"{HOTKEY_MAIN} + Enter", new(0, 0, right: 5, 0)), Text("Reset Timer", TextLineBounds.Tight)));
             UpdateSize();
         }
     }

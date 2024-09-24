@@ -12,10 +12,12 @@
 		<UseWinUI>true</UseWinUI>
 		<EnableMsixTooling>true</EnableMsixTooling>
 		<WindowsSDKPackageVersion>10.0.26100.38</WindowsSDKPackageVersion>
+		<Configurations>Debug;Release;DebugUnpackaged</Configurations>
 	</PropertyGroup>
-	<PropertyGroup>
-		<!--<WindowsPackageType>None</WindowsPackageType>-->
-	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='DebugUnpackaged'">
+        <WindowsPackageType>None</WindowsPackageType>
+	<DefineConstants>$(DefineConstants);UNPKG</DefineConstants>
+    </PropertyGroup>
 	<ItemGroup>
 	  <None Remove="Assets\ContextSwitchIcon.png" />
 	</ItemGroup>

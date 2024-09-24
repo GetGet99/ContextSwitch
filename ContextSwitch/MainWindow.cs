@@ -11,6 +11,9 @@ using Windows.Globalization;
 using WinUIEx;
 using WindowApi = WinWrapper.Windowing.Window;
 using static ContextSwitch.Controls;
+using Windows.Storage;
+using System.Reflection;
+using System.IO;
 namespace ContextSwitch;
 
 class MainWindow : Window
@@ -23,6 +26,14 @@ class MainWindow : Window
         w.Size = new(550, 450);
         var d = w.CurrentDisplay.WorkingAreaBounds;
         w.Location = new((d.Width - w.Size.Width) / 2 + d.Left, (d.Height - w.Size.Height) / 2 + d.Top);
+#if UNPKG
+        string path = AppContext.BaseDirectory;
+#else
+        string path = Windows.ApplicationModel.Package.Current.InstalledLocation.Path;
+#endif
+        w.LargeIcon = WinWrapper.Icon.FromHandle(
+            new System.Drawing.Bitmap(Path.Join(path, "Assets", "ContextSwitchIcon.png")).GetHicon()
+        );
     }
     void InitMain()
     {
@@ -55,7 +66,7 @@ class MainWindow : Window
                         SelectedTime = TimeSpan.FromMinutes(25),
                     },
                     btn = new Button() { Content = "Start Timer" },
-                    HStack(center: true, Text("Tip: Hold"), Key("R-CTRL"), Text("to show timer"))
+                    HStack(center: true, Text("Tip: Hold"), Key(FloatingTimer.HOTKEY_MAIN), Text("to show timer"))
                 )
                 .WithCustomCode(x =>
                 {
