@@ -32,8 +32,8 @@ partial class Timer
     DateTime endtime;
     private Timer()
     {
-        TimeRemainingProperty = new ReadOnlyProperty<TimeSpan>(TimeRemainingProperty_);
-        IsTimerRunningProperty = new ReadOnlyProperty<bool>(IsTimerRunningProperty_);
+        TimeRemainingProperty = TimeRemainingProperty_;
+        IsTimerRunningProperty = IsTimerRunningProperty_;
     }
     DispatcherQueueTimer timer;
     public void Initialize(DispatcherQueue dispatcherQueue)

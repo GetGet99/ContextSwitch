@@ -18,6 +18,7 @@ namespace ContextSwitch;
 
 class MainWindow : Window
 {
+    static Timer Timer => Timer.Instane;
     WindowApi w;
     public MainWindow()
     {
@@ -37,7 +38,9 @@ class MainWindow : Window
     }
     void InitMain()
     {
-        FloatingTimer ft = new(this);
+        Timer.Initialize(DispatcherQueue);
+        Keyboard.Instane.Initialize();
+        FloatingTimer ft = new();
         TimePicker tp;
         ft.Show();
         SystemBackdrop = new MicaBackdrop();
@@ -70,7 +73,7 @@ class MainWindow : Window
 #endif
                     },
                     btn = new Button() { Content = "Start Timer" },
-                    HStack(center: true, Text("Tip: Hold"), Key(FloatingTimer.HOTKEY_MAIN), Text("to show timer"))
+                    HStack(center: true, Text("Tip: Hold"), Key(Keyboard.HOTKEY_MAIN), Text("to show timer"))
                 )
                 .WithCustomCode(x =>
                 {
@@ -105,13 +108,13 @@ class MainWindow : Window
                     return;
                 }
 #endif
-                ft.Start(tp.SelectedTime.Value);
+                Timer.Start(tp.SelectedTime.Value);
             }
             w.Minimize();
         };
         AppWindow.Closing += (_, e) =>
         {
-            if (ft.IsTimerRunning)
+            if (Timer.IsTimerRunning)
             {
                 e.Cancel = true;
                 w.Minimize();

@@ -7,8 +7,11 @@ class Keyboard
 {
     static Timer Timer => Timer.Instane;
     public DateTime? ToHide { get; private set; }
+    public void SetToHideToNull()
+    {
+        ToHide = null;
+    }
     public static Keyboard Instane { get; } = new();
-    public event Action UserShow;
     private Keyboard()
     {
         Timer.Instane.TimerStarting += delegate
@@ -16,6 +19,10 @@ class Keyboard
             ToHide = DateTime.Now + TimeSpan.FromSeconds(5);
         };
         LowLevelKeyboard.KeyPressed += LowLevelKeyboard_KeyPressed;
+    }
+    public void Initialize()
+    {
+        // do nothing, making sure constructor is invoked
     }
     bool isCtrlDown = false;
 #if UNPKG
@@ -38,7 +45,6 @@ class Keyboard
             {
                 if (isCtrlDown)
                 {
-                    UserShow();
                     ToHide = null;
                 }
                 else
