@@ -13,9 +13,18 @@
 		<EnableMsixTooling>true</EnableMsixTooling>
 		<WindowsSDKPackageVersion>10.0.26100.38</WindowsSDKPackageVersion>
 		<Configurations>Debug;Release;DebugUnpackaged</Configurations>
+		<GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+		<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+		<PackageCertificateKeyFile>ContextSwitch_TemporaryKey.pfx</PackageCertificateKeyFile>
+		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+		<AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+		<AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
+		<GenerateTestArtifacts>True</GenerateTestArtifacts>
+		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+		<AppxBundle>Never</AppxBundle>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)'=='DebugUnpackaged'">
-        <WindowsPackageType>None</WindowsPackageType>
+		<WindowsPackageType>None</WindowsPackageType>
 	<DefineConstants>$(DefineConstants);UNPKG</DefineConstants>
     </PropertyGroup>
 	<ItemGroup>

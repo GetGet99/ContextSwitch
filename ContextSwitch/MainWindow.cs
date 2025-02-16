@@ -37,7 +37,7 @@ class MainWindow : Window
     }
     void InitMain()
     {
-        FloatingTimer ft = new();
+        FloatingTimer ft = new(this);
         TimePicker tp;
         ft.Show();
         SystemBackdrop = new MicaBackdrop();
@@ -63,7 +63,11 @@ class MainWindow : Window
                     tp = new TimePicker {
                         MinuteIncrement = 5,
                         ClockIdentifier = ClockIdentifiers.TwentyFourHour,
+#if UNPKG
+                        SelectedTime = TimeSpan.FromMinutes(0),
+#else
                         SelectedTime = TimeSpan.FromMinutes(25),
+#endif
                     },
                     btn = new Button() { Content = "Start Timer" },
                     HStack(center: true, Text("Tip: Hold"), Key(FloatingTimer.HOTKEY_MAIN), Text("to show timer"))
@@ -78,10 +82,31 @@ class MainWindow : Window
         };
         Grid.SetRow(main, 1);
         SetTitleBar(titlebar);
+#if !UNPKG
+        tp.SelectedTimeChanged += delegate {
+            if (tp.SelectedTime.HasValue) {
+                if (tp.SelectedTime.Value == default) {
+                    btn.Content = "Stop and close app";
+                } else {
+                    btn.Content = "Start Timer";
+                }
+            }
+        };
+#endif
         btn.Click += delegate
         {
             if (tp.SelectedTime.HasValue)
+            {
+#if !UNPKG
+                if (tp.SelectedTime.Value == default)
+                {
+                    Close();
+                    ft.Close();
+                    return;
+                }
+#endif
                 ft.Start(tp.SelectedTime.Value);
+            }
             w.Minimize();
         };
         AppWindow.Closing += (_, e) =>

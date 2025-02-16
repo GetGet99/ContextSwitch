@@ -26,8 +26,10 @@ class FloatingTimer : Window
     readonly TextBlock tb;
     readonly DispatcherQueueTimer timer, ringtimer;
     readonly SolidColorBrush background = new(Color.FromArgb(255 / 2, 0x20, 0x20, 0x20));
-    public FloatingTimer()
+    readonly MainWindow mainWindow;
+    public FloatingTimer(MainWindow m)
     {
+        mainWindow = m;
         Content = new StackPanel
         {
             Opacity = 0,
@@ -70,12 +72,16 @@ class FloatingTimer : Window
         w[WindowExStyles.Transparent] = true;
         // Do not focus this window
         w[WindowExStyles.NOACTIVATE] = true;
-        var workAreaBounds = Display.FromPoint(default).WorkingAreaBounds;
-        w.Location = new(workAreaBounds.Left + 16, workAreaBounds.Top + 16);
         SystemBackdrop = new TransparentTintBackdrop();
+        UpdateLocation();
         UpdateSize();
         ((StackPanel)Content).Loaded += FloatingTimer_Loaded;
         LowLevelKeyboard.KeyPressed += LowLevelKeyboard_KeyPressed;
+    }
+    void UpdateLocation()
+    {
+        var workAreaBounds = Display.FromPoint(default).WorkingAreaBounds;
+        w.Location = new(workAreaBounds.Left + 16, workAreaBounds.Top + 16);
     }
 
     private void FloatingTimer_Loaded(object sender, RoutedEventArgs e)
@@ -97,18 +103,17 @@ class FloatingTimer : Window
     bool isCtrlDown = false;
 #if UNPKG
     public const string HOTKEY_MAIN = "R-ALT";
+    public const WinWrapper.Input.VirtualKey HOTKEY_MAIN_VK = WinWrapper.Input.VirtualKey.RMENU;
 #else
-    public const string HOTKEY_MAIN = "R-CTRL";
+    public const string HOTKEY_MAIN = "R-ALT";
+    public const WinWrapper.Input.VirtualKey HOTKEY_MAIN_VK = WinWrapper.Input.VirtualKey.RMENU;
+    //public const string HOTKEY_MAIN = "R-CTRL";
+    //public const WinWrapper.Input.VirtualKey HOTKEY_MAIN_VK = WinWrapper.Input.VirtualKey.RCONTROL;
 #endif
     private void LowLevelKeyboard_KeyPressed(KeyboardHookInfo eventDetails, KeyboardState state, ref bool Handled)
     {
         bool isDown = state is KeyboardState.KeyDown or KeyboardState.SystemKeyDown;
-#if UNPKG
-        // Use RSHIFT for debugging
-        if (eventDetails.KeyCode == WinWrapper.Input.VirtualKey.RMENU)
-#else
-        if (eventDetails.KeyCode == WinWrapper.Input.VirtualKey.RCONTROL)
-#endif
+        if (eventDetails.KeyCode == HOTKEY_MAIN_VK)
         {
             Handled = true;
             isCtrlDown = isDown;
@@ -116,6 +121,7 @@ class FloatingTimer : Window
             {
                 if (isCtrlDown)
                 {
+                    UpdateLocation();
                     Content.Opacity = 1;
                     ToHide = null;
                 }
@@ -152,6 +158,22 @@ class FloatingTimer : Window
             if (isDown && keyReset)
             {
                 Start(resetTimerDuration);
+            }
+        }
+        if (isCtrlDown && eventDetails.KeyCode == (WinWrapper.Input.VirtualKey)0xBF)
+        {
+            Handled = true;
+            if (isDown)
+            {
+                if (IsTimerRunning)
+                {
+                    endtime = DateTime.Now;
+                    TimerCallback();
+                } else
+                {
+                    mainWindow.Close();
+                    Close();
+                }
             }
         }
         if (isCtrlDown && eventDetails.KeyCode == WinWrapper.Input.VirtualKey.LEFT)
@@ -217,7 +239,10 @@ class FloatingTimer : Window
         TimeSpan diff = endtime - now;
         if (diff > TimeSpan.Zero)
         {
-            tb.Text = $"{diff:mm\\:ss}";
+            if (diff > TimeSpan.FromHours(1))
+                tb.Text = $"{diff:hh\\:mm}";
+            else
+                tb.Text = $"{diff:mm\\:ss}";
             if (ToHide.HasValue)
             {
                 if (ToHide.Value - now < TimeSpan.Zero)
@@ -228,8 +253,12 @@ class FloatingTimer : Window
             }
             if (diff < TimeSpan.FromSeconds(6))
             {
-                lockHide = true;
-                Content.Opacity = 1;
+                if (!lockHide)
+                {
+                    UpdateLocation();
+                    lockHide = true;
+                    Content.Opacity = 1;
+                }
             }
         } else
         {
