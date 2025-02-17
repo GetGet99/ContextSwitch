@@ -1,22 +1,25 @@
-﻿using System;
+﻿using Get.Data.Properties;
+using Microsoft.UI.Xaml;
+using System;
+using System.Collections.Generic;
+using WinUIEx;
 using WinWrapper;
 
 namespace ContextSwitch;
-
-class Keyboard
+[AutoProperty]
+partial class Keyboard
 {
     static Timer Timer => Timer.Instane;
-    public DateTime? ToHide { get; private set; }
-    public void SetToHideToNull()
-    {
-        ToHide = null;
-    }
+    public IReadOnlyProperty<DateTime?> ToHideProperty { get; }
+    IProperty<DateTime?> _ToHideProperty = AutoTyper.Auto<DateTime?>(null);
     public static Keyboard Instane { get; } = new();
+    public List<Window> WindowsToClose { get; } = [];
     private Keyboard()
     {
+        ToHideProperty = new ReadOnlyProperty<DateTime?>(_ToHideProperty);
         Timer.Instane.TimerStarting += delegate
         {
-            ToHide = DateTime.Now + TimeSpan.FromSeconds(5);
+            _ToHideProperty.CurrentValue = DateTime.Now + TimeSpan.FromSeconds(5);
         };
         LowLevelKeyboard.KeyPressed += LowLevelKeyboard_KeyPressed;
     }
@@ -45,10 +48,10 @@ class Keyboard
             {
                 if (isCtrlDown)
                 {
-                    ToHide = null;
+                    _ToHideProperty.CurrentValue = null;
                 }
                 else
-                    ToHide = DateTime.Now + TimeSpan.FromSeconds(3);
+                    _ToHideProperty.CurrentValue = DateTime.Now + TimeSpan.FromSeconds(3);
             }
         }
         if (isCtrlDown && eventDetails.KeyCode == WinWrapper.Input.VirtualKey.UP)
@@ -86,8 +89,25 @@ class Keyboard
                 }
                 else
                 {
-                    Environment.Exit(0);
+                    foreach (var window in WindowsToClose)
+                    {
+                        window.Close();
+                    }
                 }
+            }
+        }
+        if (isCtrlDown && eventDetails.KeyCode == WinWrapper.Input.VirtualKey.OEM_PERIOD)
+        {
+            Handled = true;
+            if (isDown)
+            {
+                foreach (var window in WindowsToClose)
+                {
+                    if (window is FloatingTimer timer)
+                        timer.Close();
+                }
+                var newFloatingTimer = new FloatingTimer();
+                newFloatingTimer.Show();
             }
         }
         if (isCtrlDown && eventDetails.KeyCode == WinWrapper.Input.VirtualKey.LEFT)

@@ -26,7 +26,9 @@ partial class Timer
     public IReadOnlyProperty<TimeSpan> TimeRemainingProperty { get; }
     IProperty<TimeSpan> TimeRemainingProperty_ = Auto(TimeSpan.Zero);
     public IReadOnlyProperty<bool> IsTimerRunningProperty { get; }
+    public IReadOnlyProperty<bool> HasStartedOnceProperty { get; }
     IProperty<bool> IsTimerRunningProperty_ = Auto(false);
+    IProperty<bool> HasStartedOnceProperty_ = Auto(false);
     public event Action UserShow;
     public event Action TimerStarting;
     DateTime endtime;
@@ -34,6 +36,7 @@ partial class Timer
     {
         TimeRemainingProperty = TimeRemainingProperty_;
         IsTimerRunningProperty = IsTimerRunningProperty_;
+        HasStartedOnceProperty = HasStartedOnceProperty_;
     }
     DispatcherQueueTimer timer;
     public void Initialize(DispatcherQueue dispatcherQueue)
@@ -52,6 +55,7 @@ partial class Timer
     {
         if (setAsResetTimerDuration)
             resetTimerDuration = timerDuration;
+        HasStartedOnceProperty_.CurrentValue = true;
         endtime = DateTime.Now + timerDuration;
         TimerCallback();
         UpdateIsTimerRunning();

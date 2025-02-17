@@ -22,6 +22,7 @@ class MainWindow : Window
     WindowApi w;
     public MainWindow()
     {
+        Keyboard.Instane.WindowsToClose.Add(this);
         InitMain();
         w = WindowApi.FromWindowHandle((nint)AppWindow.Id.Value);
         w.Size = new(550, 450);

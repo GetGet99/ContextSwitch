@@ -29,6 +29,7 @@
     </PropertyGroup>
 	<ItemGroup>
 	  <None Remove="Assets\ContextSwitchIcon.png" />
+	  <None Remove="Assets\lol.🗿.wav" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -19,6 +19,12 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Get.Data.Properties;
 using Get.Data.Helpers;
 using System.Threading;
+using Windows.Media.Playback;
+using ABI.System.Numerics;
+using Windows.Media.Core;
+using System.IO;
+using System.Net.Mime;
+using Get.Data.Bindings;
 
 namespace ContextSwitch;
 
@@ -33,6 +39,7 @@ class FloatingTimer : Window
     StackPanel resetTimerText;
     public FloatingTimer()
     {
+        Keyboard.WindowsToClose.Add(this);
         Content = new StackPanel
         {
             Opacity = 0,
@@ -59,7 +66,7 @@ class FloatingTimer : Window
             },
             RequestedTheme = ElementTheme.Dark,
         };
-
+        resetTimerText.Visibility = Visibility.Collapsed;
         ringtimer = DispatcherQueue.CreateTimer();
         ringtimer.Interval = TimeSpan.FromMilliseconds(1000);
         ringtimer.Tick += (_, _) => ToggleRingState();
@@ -77,13 +84,23 @@ class FloatingTimer : Window
         SystemBackdrop = new TransparentTintBackdrop();
         UpdateLocation();
         UpdateSize();
+        bool isClosed = false;
         ((StackPanel)Content).Loaded += FloatingTimer_Loaded;
-        Timer.TimeRemainingProperty.ApplyAndRegisterForNewValue((_, timeRemaining) =>
+        Timer.TimeRemainingProperty.ApplyAndRegisterForNewValue(timeRemaining);
+        Timer.TimerStarting += TimerTimerStarting;
+        Keyboard.ToHideProperty.ApplyAndRegisterForNewValue(tohide);
+        Closed += delegate
         {
-            TimerCallback(timeRemaining);
-        });
-        Timer.TimerStarting += delegate
+            isClosed = true;
+            ((StackPanel)Content).Loaded -= FloatingTimer_Loaded;
+            Timer.TimeRemainingProperty.ValueChanged -= timeRemaining;
+            Timer.TimerStarting -= TimerTimerStarting;
+            Keyboard.ToHideProperty.ValueChanged -= tohide;
+            ringtimer.Stop();
+        };
+        void TimerTimerStarting()
         {
+            if (isClosed) return;
             ringtimer.Stop();
             if (ringTimerAbnormalState)
                 ToggleRingState();
@@ -93,7 +110,17 @@ class FloatingTimer : Window
             background.Color = Color.FromArgb(255 / 2, 0x20, 0x20, 0x20);
             TimerCallback(Timer.TimeRemaining);
             Content.Opacity = 1;
-        };
+        }
+        void timeRemaining(TimeSpan _, TimeSpan timeRemaining)
+        {
+            if (isClosed) return;
+            TimerCallback(timeRemaining);
+        }
+        void tohide(DateTime? _, DateTime? _1)
+        {
+            if (isClosed) return;
+            TimerCallback(Timer.TimeRemaining);
+        }
     }
     void UpdateLocation()
     {
@@ -128,25 +155,32 @@ class FloatingTimer : Window
         DateTime now = DateTime.Now;
         if (diff > TimeSpan.Zero)
         {
+            if (player.CurrentState is not MediaPlayerState.Paused)
+                player.Pause();
             if (diff > TimeSpan.FromHours(1))
                 tb.Text = $"{diff:hh\\:mm}";
             else
                 tb.Text = $"{diff:mm\\:ss}";
-            if (Keyboard.ToHide.HasValue && Keyboard.ToHide.Value - now < TimeSpan.Zero)
+            if (Keyboard.ToHide.HasValue)
             {
-                TryToHide();
-            } else
-            {
-                TryToShow();
+                if (Keyboard.ToHide.Value - now < TimeSpan.Zero)
+                    TryToHide();
+                else
+                    TryToShow();
             }
+            else
+                TryToShow();
             if (diff < TimeSpan.FromSeconds(6))
             {
                 TryToShow();
             }
-        } else
+        }
+        else if (Timer.HasStartedOnce)
         {
+            TryToShow();
+            if (player.CurrentState is MediaPlayerState.Paused)
+                player.Play();
             tb.Text = "00:00";
-            ElementSoundPlayer.State = ElementSoundPlayerState.On;
             ToggleRingState();
             ringtimer.Start();
             resetTimerText.Visibility = Visibility.Visible;
@@ -159,7 +193,6 @@ class FloatingTimer : Window
             // do not hide
             return;
         Content.Opacity = 0;
-        Keyboard.SetToHideToNull();
     }
     void TryToShow()
     {
@@ -170,18 +203,31 @@ class FloatingTimer : Window
         Content.Opacity = 1;
     }
     bool ringTimerAbnormalState;
+    static MediaPlayer player { get; } = new()
+    {
+        Source = MediaSource.CreateFromStream(
+                File.OpenRead(
+                    Path.Combine(
+                        Windows.ApplicationModel.Package.Current.InstalledLocation.Path,
+                        "Assets",
+                        "lol.🗿.wav"
+                    )
+                ).AsRandomAccessStream(),
+                "audio/wav"
+            ),
+        IsLoopingEnabled = true,
+    };
     void ToggleRingState()
     {
         if (ringTimerAbnormalState)
         {
             background.Color = Color.FromArgb(255 / 2, 0x20, 0x20, 0x20);
-            ElementSoundPlayer.State = ElementSoundPlayerState.Off;
-        } else
+        }
+        else
         {
             Color c = Colors.Red;
             c.A = 255 / 2;
             background.Color = c;
-            ElementSoundPlayer.Play(ElementSoundKind.Invoke);
         }
         ringTimerAbnormalState = !ringTimerAbnormalState;
     }
