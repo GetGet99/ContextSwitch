@@ -14,6 +14,8 @@ using static ContextSwitch.Controls;
 using Windows.Storage;
 using System.Reflection;
 using System.IO;
+using CommunityToolkit.Helpers;
+using CommunityToolkit.WinUI;
 namespace ContextSwitch;
 
 class MainWindow : Window
@@ -112,6 +114,69 @@ class MainWindow : Window
                 Timer.Start(tp.SelectedTime.Value);
             }
             w.Minimize();
+        };
+        tp.Loaded += delegate
+        {
+            if (tp.IsLoaded)
+            {
+                var hours = tp.FindDescendant<Border>(x => x.Name is "SecondPickerHost");
+                var minutes = tp.FindDescendant<Border>(x => x.Name is "ThirdPickerHost");
+                var ts2355 = TimeSpan.FromHours(23) + TimeSpan.FromMinutes(55);
+                TimeSpan clampTime(TimeSpan value)
+                {
+                    if (value < TimeSpan.Zero)
+                        return TimeSpan.Zero;
+                    else if (value > ts2355)
+                        return ts2355;
+                    return value;
+                }
+                int hoursDelta = 0;
+                int minutesDelta = 0;
+                hours.PointerWheelChanged += (_, e) =>
+                {
+                    var prop = e.GetCurrentPoint(tp).Properties;
+                    if (prop.IsHorizontalMouseWheel)
+                        return;
+                    hoursDelta += prop.MouseWheelDelta;
+                    while (hoursDelta >= 120)
+                    {
+                        hoursDelta -= 120;
+                        tp.SelectedTime = clampTime(tp.SelectedTime!.Value +
+                            TimeSpan.FromHours(1));
+                    }
+                    while (hoursDelta <= -120)
+                    {
+                        hoursDelta += 120;
+                        tp.SelectedTime = clampTime(
+                            tp.SelectedTime!.Value -
+                            TimeSpan.FromHours(1)
+                        );
+                    }
+                };
+                minutes.PointerWheelChanged += (_, e) =>
+                {
+                    var prop = e.GetCurrentPoint(tp).Properties;
+                    if (prop.IsHorizontalMouseWheel)
+                        return;
+                    minutesDelta += prop.MouseWheelDelta;
+                    while (minutesDelta >= 120)
+                    {
+                        minutesDelta -= 120;
+                        tp.SelectedTime = clampTime(
+                            tp.SelectedTime!.Value +
+                            TimeSpan.FromMinutes(5)
+                            );
+                    }
+                    while (minutesDelta <= -120)
+                    {
+                        minutesDelta += 120;
+                        tp.SelectedTime = clampTime(
+                            tp.SelectedTime!.Value -
+                            TimeSpan.FromMinutes(5)
+                        );
+                    }
+                };
+            }
         };
         AppWindow.Closing += (_, e) =>
         {
