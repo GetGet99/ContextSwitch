@@ -155,8 +155,6 @@ class FloatingTimer : Window
         DateTime now = DateTime.Now;
         if (diff > TimeSpan.Zero)
         {
-            if (player.CurrentState is not MediaPlayerState.Paused)
-                player.Pause();
             if (diff > TimeSpan.FromHours(1))
                 tb.Text = $"{diff:hh\\:mm}";
             else
@@ -178,8 +176,6 @@ class FloatingTimer : Window
         else if (Timer.HasStartedOnce)
         {
             TryToShow();
-            if (player.CurrentState is MediaPlayerState.Paused)
-                player.Play();
             tb.Text = "00:00";
             ToggleRingState();
             ringtimer.Start();
@@ -203,20 +199,7 @@ class FloatingTimer : Window
         Content.Opacity = 1;
     }
     bool ringTimerAbnormalState;
-    static MediaPlayer player { get; } = new()
-    {
-        Source = MediaSource.CreateFromStream(
-                File.OpenRead(
-                    Path.Combine(
-                        Windows.ApplicationModel.Package.Current.InstalledLocation.Path,
-                        "Assets",
-                        "lol.🗿.wav"
-                    )
-                ).AsRandomAccessStream(),
-                "audio/wav"
-            ),
-        IsLoopingEnabled = true,
-    };
+    
     void ToggleRingState()
     {
         if (ringTimerAbnormalState)

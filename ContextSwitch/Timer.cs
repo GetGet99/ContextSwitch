@@ -17,7 +17,9 @@ using Microsoft.UI.Composition;
 using static ContextSwitch.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Get.Data.Properties;
+using Get.Data.Bindings.Linq;
 using static Get.Data.Properties.AutoTyper;
+using System.Security.Cryptography;
 namespace ContextSwitch;
 [AutoProperty]
 partial class Timer
@@ -37,6 +39,19 @@ partial class Timer
         TimeRemainingProperty = TimeRemainingProperty_;
         IsTimerRunningProperty = IsTimerRunningProperty_;
         HasStartedOnceProperty = HasStartedOnceProperty_;
+        var isDone = from tr in TimeRemainingProperty
+                from hs in HasStartedOnceProperty
+                select hs && tr == TimeSpan.Zero;
+        isDone.ApplyAndRegisterForNewValue((_, x) =>
+        {
+            if (x)
+            {
+                SoundSystem.Instance.Play();
+            } else
+            {
+                SoundSystem.Instance.Pause();
+            }
+        });
     }
     DispatcherQueueTimer timer;
     public void Initialize(DispatcherQueue dispatcherQueue)

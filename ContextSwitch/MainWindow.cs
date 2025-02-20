@@ -124,8 +124,8 @@ class MainWindow : Window
                 var ts2355 = TimeSpan.FromHours(23) + TimeSpan.FromMinutes(55);
                 TimeSpan clampTime(TimeSpan value)
                 {
-                    if (value < TimeSpan.Zero)
-                        return TimeSpan.Zero;
+                    if (value < TimeSpan.FromMinutes(5))
+                        return TimeSpan.FromMinutes(5);
                     else if (value > ts2355)
                         return ts2355;
                     return value;
